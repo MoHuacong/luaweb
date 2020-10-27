@@ -21,9 +21,11 @@ func NewWeb(host string, api_host string, dir string) (*Web, error) {
 }
 
 func (web *Web) ServeHTTP(resp http.ResponseWriter,req *http.Request) {
-	NewApi(web, req, resp)
-	config, _ := NewConfig(web.dir, req, resp)
-	config.Analyze()
+	api, _ := NewApi(web, req, resp)
+	if !api.A {
+		config, _ := NewConfig(api)
+		config.Analyze()
+	}
 }
 
 func (web *Web) start() {

@@ -2,22 +2,20 @@ package luaweb
 
 import (
 	"fmt"
-	"net/http"
 )
 
 type Config struct {
-	path string
-	req *http.Request
-	resp http.ResponseWriter
+	api *Api
 }
 
-func NewConfig(path string, req *http.Request, resp http.ResponseWriter) (*Config, error) {
-	return &Config{path, req, resp}, nil
+func NewConfig(api *Api) (*Config, error) {
+	return &Config{api}, nil
 }
 
 func (config *Config) GetData() string {
-	fmt.Println(config.path)
-	fmt.Println(config.req.Host)
+	fmt.Println(config.api.web.GetDir())
+	fmt.Println(config.api.req.Host)
+	fmt.Println(config.api.FormatFile(config.api.req.Host))
 	return ""
 }
 

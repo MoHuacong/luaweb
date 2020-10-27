@@ -1,6 +1,8 @@
+cd /sdcard/go/src/github.com/MoHuacong/luaweb
 git init
 git add .
 git commit -m "first commit"
 git remote add origin https://github.com/MoHuacong/luaweb.git
 git branch -M master
 git push -u origin master
+

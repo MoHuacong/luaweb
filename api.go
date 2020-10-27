@@ -12,7 +12,10 @@ import (
 	"encoding/json"
 )
 
+var M_dir string = "host"
+
 type Api struct {
+	A bool
 	web *Web
 	req *http.Request
 	resp http.ResponseWriter
@@ -27,10 +30,12 @@ func Md5(str string) string {
 
 func NewApi(web *Web, req *http.Request, resp http.ResponseWriter) (*Api, error) {
 
-	api := &Api{web, req, resp, make(map[interface{}]interface{})}
+	api := &Api{false, web, req, resp, make(map[interface{}]interface{})}
+	
+	api.inits()
 	
 	var port int
-	var arr []string = strings.Split(api.req.Host, ":");
+	var arr []string = strings.Split(api.req.Host, ":")
 	
 	if(len(arr) != 2) {
 		port = 80
@@ -42,7 +47,8 @@ func NewApi(web *Web, req *http.Request, resp http.ResponseWriter) (*Api, error)
 		return api, nil
 	}
 	
-	api.inits()
+	api.A = true
+	
 	api.main()
 	return api, nil
 }
@@ -51,6 +57,7 @@ func (api *Api) Key(key string) interface{} {
 	return api.key[key]
 }
 
+/* 路由器 */
 func (api *Api) main() error {
 	json := make(map[string]interface{})
 	types := api.req.URL.Query().Get("type")
@@ -165,4 +172,23 @@ func (api *Api) AddListen(host string) bool {
 		return false
 	}
 	return true
+}
+
+/* 域名转路径 */
+func (api *Api) FormatFile(host string) string {
+	var port string
+	arr := strings.Split(host, ":")
+	if len(arr) == 2 {
+		port = arr[1]
+		arr = strings.Split(arr[0], ".")
+	} else {
+		port = "80"
+		arr = strings.Split(host, ".")
+	}
+	
+	var dir string = port + "/"
+	for i := len(arr) - 1; i >= 0; i-- {
+		dir += arr[i] + "/"
+	}
+	return dir
 }
