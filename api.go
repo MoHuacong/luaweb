@@ -12,7 +12,18 @@ import (
 	"encoding/json"
 )
 
-var M_dir string = "host"
+/* 配置数据结构体 */
+type ConfigData struct {
+	File_End string
+	Host_dir string
+	FileName string
+}
+
+var CData ConfigData = ConfigData{
+			File_End: ".json",
+			Host_dir: "host",
+			FileName: "data",
+			}
 
 type Api struct {
 	A bool
@@ -22,6 +33,7 @@ type Api struct {
 	key map[interface{}]interface{}
 }
 
+/* md5加密 */
 func Md5(str string) string {
 	h := md5.New()
 	h.Write([]byte(str))
@@ -108,8 +120,26 @@ func (api *Api) json() string {
 	return string(mjson)
 }
 
+/* 初始化目录 */
+func (api *Api) initDir() {
+	dir := api.web.GetDir()
+	
+	tpl := dir + "/tpl"
+	host := dir + "/host"
+	user := dir + "/user"
+	
+	os.Mkdir(tpl, os.ModePerm)
+	os.Mkdir(host, os.ModePerm)
+	os.Mkdir(user, os.ModePerm)
+	
+	api.key["tpl_dir"] = tpl
+	api.key["host_dir"] = host
+	api.key["user_dir"] = user
+}
+
 /* 初始化 */
 func (api *Api) inits() {
+	api.initDir()
 	var path string = api.web.GetDir() + "/data.json"
 	_, err := os.Stat(path)
 	
@@ -175,7 +205,7 @@ func (api *Api) AddListen(host string) bool {
 }
 
 /* 域名转路径 */
-func (api *Api) FormatFile(host string) string {
+func (api *Api) FormatDir(host string) string {
 	var port string
 	arr := strings.Split(host, ":")
 	if len(arr) == 2 {
@@ -191,4 +221,14 @@ func (api *Api) FormatFile(host string) string {
 		dir += arr[i] + "/"
 	}
 	return dir
+}
+
+/* 域名转绝对路径 */
+func (api *Api) FormatDirs(host string) string {
+	return api.web.dir + "/" + CData.Host_dir + "/" + api.FormatDir(host)
+}
+
+/* 域名转绝对文件路径 */
+func (api *Api) FormatFile(host string) string {
+	return api.FormatDirs(host) + "/" + CData.FileName + CData.File_End
 }
