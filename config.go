@@ -1,7 +1,7 @@
 package luaweb
 
 import (
-	"fmt"
+	//"fmt"
 	"io/ioutil"
 	"github.com/flosch/pongo2"
 )
@@ -22,14 +22,24 @@ func (config *Config) GetData() string {
 }
 
 func (config *Config) Analyze() {
-	data := config.GetData()
-	if data == "" {
+	user := config.GetData()
+	if user == "" {
 		config.MainService()
 	} else {
-		fmt.Println("ok")
+		web_dir := config.api.Key("web_dir").(string)
+		config.api.Value("web", web_dir + "/" + user)
+		config.Runlua()
 	}
 }
 
+func (config *Config) Runlua() bool {
+	lib, _ := NewLualib(config)
+	lib.Main()
+	lib.Close()
+	return true
+}
+
+/* 引导页 */
 func (config *Config) MainService() {
 	tpl_dir := config.api.Key("tpl_dir").(string)
 	ch, err := ioutil.ReadFile(tpl_dir + "/index.html")
@@ -37,7 +47,7 @@ func (config *Config) MainService() {
 	html := "域名" + config.api.req.Host + "没有与服务绑定"
 	
 	var data string
-	if err != nil {
+	if err == nil {
 		data = string(ch)
 	} else {
 		data = "域名{{host}}没有与服务绑定"
@@ -45,14 +55,12 @@ func (config *Config) MainService() {
 	
 	tpl, err1 := pongo2.FromString(data)
 	
-	if err1 == nil {
-		out, errs := tpl.Execute(pongo2.Context{"host": config.api.req.Host})
-		if errs != nil {
-			config.api.resp.Write([]byte("域名" + config.api.req.Host + "没有与服务绑定"))
-		}
-		
+	var out string
+	if err1 != nil {
+		config.api.resp.Write([]byte(data))
+	} else if out, err = tpl.Execute(pongo2.Context{"host": config.api.req.Host}); err != nil{
+		config.api.resp.Write([]byte(html))
+	} else {
 		config.api.resp.Write([]byte(out))
 	}
-	
-	config.api.resp.Write([]byte(html))
 }

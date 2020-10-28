@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"net/http"
 	"strings"
-	//lua "github.com/yuin/gopher-lua"
 )
 
 type Web struct {
