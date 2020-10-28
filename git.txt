@@ -7,5 +7,6 @@ git branch -M master
 git push -u origin master
 
 
+git pull origin master --allow-unrelated-histories
 
 MoHuacong

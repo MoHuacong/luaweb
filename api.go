@@ -42,6 +42,7 @@ func Md5(str string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+/* 创建并初始化结构体 */
 func NewApi(web *Web, req *http.Request, resp http.ResponseWriter) (*Api, error) {
 
 	api := &Api{
@@ -75,10 +76,12 @@ func NewApi(web *Web, req *http.Request, resp http.ResponseWriter) (*Api, error)
 	return api, nil
 }
 
+/* value获取 */
 func (api *Api) Key(key string) interface{} {
 	return api.key[key]
 }
 
+/* key/value设置 */
 func (api *Api) Value(key string, value interface{}) bool {
 	api.key[key] = value
 	if api.key[key] != value {
@@ -313,6 +316,7 @@ func (api *Api) retPut(str string) uint {
 	return 0
 }
 
+/* 直接写入并返回原值 */
 func (api *Api) errExit(code uint, data string) uint {
 	api.errPut(data)
 	return code
