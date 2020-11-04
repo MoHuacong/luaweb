@@ -2,10 +2,12 @@ package luaweb
 
 import (
 	"os"
-	//"fmt"
+	"fmt"
+	"reflect"
 	"strings"
 	"strconv"
 	"io/ioutil"
+	"net/url"
 	"net/http"
 	"crypto/md5"
 	"encoding/hex"
@@ -90,48 +92,75 @@ func (api *Api) Value(key string, value interface{}) bool {
 	return true
 }
 
+/* 强制类型转换 */
+func (api *Api) ToType(mt reflect.Type, url url.Values) []reflect.Value {
+	var args []reflect.Value = make([]reflect.Value, mt.NumIn())
+	
+	var i int = 0
+	for key, value := range url {
+		if key == "type" { continue }
+		if i >= mt.NumIn() { break }
+		
+		kind := mt.In(i).Kind()
+		t := kind.String()
+
+		if t == "string" {
+			args[i] = reflect.ValueOf(value[0])
+		}
+		i++
+	}
+	return args
+}
+
+/* 反射方法 */
+func (api *Api) reflectMethod(method string) uint {
+	defer func() uint {
+		if p := recover(); p != nil {
+			fmt.Printf("panic错误: %s\n", p)
+			return api.errExit(1, "panic错误: " + p.(string))
+		}
+		return api.retPut(api.ret)
+	}()
+	
+	v := reflect.ValueOf(api)
+	if method == "" {
+		return api.errExit(3, "type参数不完整")
+	}
+	
+	var zero reflect.Value
+	mv := v.MethodByName(method)
+	if mv == zero {
+		return api.errExit(3, "type接口错误或不存在(反射失败)")
+	}
+	
+	mt := mv.Type()
+	if mt.NumIn() > len(api.req.URL.Query()) {
+		return api.errExit(2, "参数不完整")
+	}
+	
+	args := api.ToType(mt, api.req.URL.Query())
+	//args := []reflect.Value{reflect.ValueOf("咖啡色的羊驼")}
+
+	value := mv.Call(args)
+	return uint(value[0].Uint())
+}
+
 /* 路由器 */
 func (api *Api) main() error {
-	var ret uint
 	types := api.req.URL.Query().Get("type")
 	
-	/* 登录 */
-	if types == "login" {
-		user := api.req.URL.Query().Get("user")
-		pass := api.req.URL.Query().Get("pass")
-		ret = api.Login(user, pass)
-		if ret  == 0 {
-			return api.FormatMapExit(ret, api.ret)
-		} else {
-			return api.FormatMapExit(ret, api.Errors())
+	if types != "Login" {
+		/* 检测登录 */
+		if !api.IsLoginCookie() {
+			return api.FormatMapExit(1, "末登录")
 		}
 	}
 	
-	/* 检测登录 */
-	if !api.IsLoginCookie() {
-		return api.FormatMapExit(1, "末登录")
-	}
-	
-	/* 端口监听 */
-	if types == "AddListen" {
-		ret = api.AddListen(api.req.URL.Query().Get("host"))
-		if ret  == 0 {
-			return api.FormatMapExit(ret, api.ret)
-		} else {
-			return api.FormatMapExit(ret, api.Errors())
-		}
-	}
-	
-	/* 添加用户 */
-	if types == "AddUser" {
-		user := api.req.URL.Query().Get("user")
-		pass := api.req.URL.Query().Get("pass")
-		ret = api.AddUser(user, pass)
-		if ret  == 0 {
-			return api.FormatMapExit(ret, api.ret)
-		} else {
-			return api.FormatMapExit(ret, api.Errors())
-		}
+	ret := api.reflectMethod(types)
+	if ret  == 0 {
+		return api.FormatMapExit(ret, api.ret)
+	} else {
+		return api.FormatMapExit(ret, api.Errors())
 	}
 	
 	return api.FormatMapExit(1, "作者Moid最帅")
@@ -265,6 +294,31 @@ func (api *Api) AddUser(user string, pass string) uint {
 	f.Close()
 	
 	return api.retPut("添加用户成功")
+}
+
+/* 添加用户域名 */
+func (api *Api) AddUserHost(user string, host string) uint {
+	file := api.Key("user_dir").(string) + "/" + user + CData.File_End
+	ch, err := ioutil.ReadFile(file)
+	
+	if os.IsNotExist(err) {
+		return api.errExit(1, "用户不存在")
+	}
+	
+	key := make(map[string]interface{})
+	json.Unmarshal(ch, &key)
+	if key["user"] == nil {
+		return api.errExit(2, "用户数据错误")
+	}
+	
+	arr := make([]string, 1)
+	if key["host"] == nil {
+		key["host"] = arr
+	}
+	
+	fmt.Println(key)
+	
+	return api.retPut("添加成功")
 }
 
 /* 添加端口监听 */
