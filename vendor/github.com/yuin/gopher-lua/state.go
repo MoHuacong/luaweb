@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/yuin/gopher-lua/parse"
+	. "github.com/MoHuacong/luaweb/context"
 )
 
 const MultRet = -1
@@ -109,6 +110,8 @@ type Options struct {
 	// If `MinimizeStackMemory` is set, the call stack will be automatically grown or shrank up to a limit of
 	// `CallStackSize` in order to minimize memory usage. This does incur a slight performance penalty.
 	MinimizeStackMemory bool
+	// luaweb虚拟主机分销系统上下文
+	LuaWeb *Context
 }
 
 /* }}} */
